@@ -1,0 +1,13 @@
+Cross compilation:
+export GOARM=5
+export GOARCH=arm ou GOARCH=arm64
+export GOOS=linux
+
+Manipulation des GPIO en shell
+echo 17 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio17/direction
+echo 1 > /sys/class/gpio/gpio17/value
+
+un GPIO fourni du 3V quand il est à 1 et 0 quand il est à 0
+
+
