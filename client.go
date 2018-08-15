@@ -18,6 +18,8 @@ type Connect struct {
 		Value int `json:"value"`
 }
 
+var gpioid string
+
 func main() {
 	fmt.Println("Connect")
 	url := os.Args[1]
@@ -29,12 +31,8 @@ func main() {
 		panic(err)
 	}
 
-	var label string
-	if len(os.Args) >= 3 {
-		label = os.Args[3]
-	} else {
-		label = "Inconnu"
-	}
+	var label = os.Args[3]
+	gpioid = os.Args[4]
 
 	for {
 		log.Print("Dial")
@@ -84,12 +82,12 @@ func main() {
 func switchGpio(value int) {
 	export()
 
-	err := ioutil.WriteFile("/sys/class/gpio/gpio475/direction", []byte("out"), 0)
+	err := ioutil.WriteFile("/sys/class/gpio/gpio" + gpioid + "/direction", []byte("out"), 0)
 	if err != nil {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile("/sys/class/gpio/gpio475/value", []byte(strconv.Itoa(value)), 0)
+	err = ioutil.WriteFile("/sys/class/gpio/gpio" + gpioid + "/value", []byte(strconv.Itoa(value)), 0)
 	if err != nil {
 		panic(err)
 	}
@@ -116,10 +114,10 @@ func switchGpio(value int) {
 }*/
 
 func export() {
-	_, err := os.Stat("/sys/class/gpio/gpio475/value")
+	_, err := os.Stat("/sys/class/gpio/gpio" + gpioid + "/value")
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = ioutil.WriteFile("/sys/class/gpio/export", []byte("475"), 0)
+			err = ioutil.WriteFile("/sys/class/gpio/export", []byte(gpioid), 0)
 			if err != nil {
 				panic(err)
 			}
