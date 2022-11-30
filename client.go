@@ -1,21 +1,22 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"golang.org/x/net/websocket"
 	"io/ioutil"
 	"log"
-	"os"
-  "encoding/json"
-  "strconv"
-	"time"
 	"net"
+	"os"
+	"strconv"
+	"time"
+
+	"golang.org/x/net/websocket"
 )
 
 type Connect struct {
-    Id int `json:"id"`
-    Description string `json:"description"`
-		Value int `json:"value"`
+	Id          int    `json:"id"`
+	Description string `json:"description"`
+	Value       int    `json:"value"`
 }
 
 var gpioid string
@@ -51,10 +52,10 @@ func main() {
 		}
 		var msg = make([]byte, 512)
 		var n int
-	  for {
+		for {
 			ws.SetReadDeadline(time.Now().Add(timeout))
-		  if n, err = ws.Read(msg); err != nil {
-				if e,ok := err.(net.Error); ok && e.Timeout() {
+			if n, err = ws.Read(msg); err != nil {
+				if e, ok := err.(net.Error); ok && e.Timeout() {
 					ws.Write([]byte("{}"))
 					continue
 				}
@@ -63,31 +64,31 @@ func main() {
 				ws.Close()
 				time.Sleep(2 * time.Second)
 				break
-		  }
-		  fmt.Printf("Received: %s.\n", msg[:n])
-	    var f interface{}
-	    err := json.Unmarshal(msg[:n], &f)
-	    if err != nil {
+			}
+			fmt.Printf("Received: %s.\n", msg[:n])
+			var f interface{}
+			err := json.Unmarshal(msg[:n], &f)
+			if err != nil {
 				log.Print(err)
 				ws.Close()
 				time.Sleep(2 * time.Second)
 				break
-	    }
-	    value = int(f.(map[string]interface{})["value"].(float64))
-	    switchGpio(value);
-	  }
+			}
+			value = int(f.(map[string]interface{})["value"].(float64))
+			switchGpio(value)
+		}
 	}
 }
 
 func switchGpio(value int) {
 	export()
 
-	err := ioutil.WriteFile("/sys/class/gpio/gpio" + gpioid + "/direction", []byte("out"), 0)
+	err := ioutil.WriteFile("/sys/class/gpio/gpio"+gpioid+"/direction", []byte("out"), 0)
 	if err != nil {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile("/sys/class/gpio/gpio" + gpioid + "/value", []byte(strconv.Itoa(value)), 0)
+	err = ioutil.WriteFile("/sys/class/gpio/gpio"+gpioid+"/value", []byte(strconv.Itoa(value)), 0)
 	if err != nil {
 		panic(err)
 	}
