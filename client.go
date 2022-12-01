@@ -2,15 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"os"
 	"strconv"
 	"time"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 type Connect struct {
@@ -22,10 +20,9 @@ type Connect struct {
 var gpioid string
 
 func main() {
-	fmt.Println("Connect")
+	log.Println("Starting")
 	url := os.Args[1]
 	value := -1
-	timeout := 5 * time.Second
 
 	id, err := strconv.ParseInt(os.Args[2], 10, 64)
 	if err != nil {
@@ -36,38 +33,39 @@ func main() {
 	gpioid = os.Args[4]
 
 	for {
-		log.Print("Dial")
-		ws, err := websocket.Dial(url, "", "http://192.168.0.6:9000")
+		log.Printf("Dialing to %v", url)
+		ws, _, err := websocket.DefaultDialer.Dial(url, nil)
 		if err != nil {
 			log.Print(err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
+		log.Printf("Connected to %v", ws.RemoteAddr())
+
 		conn := Connect{int(id), label, value}
 		b, _ := json.Marshal(conn)
-		if _, err := ws.Write(b); err != nil {
+		if err := ws.WriteMessage(websocket.TextMessage, b); err != nil {
 			log.Print(err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
-		var msg = make([]byte, 512)
-		var n int
-		for {
-			ws.SetReadDeadline(time.Now().Add(timeout))
-			if n, err = ws.Read(msg); err != nil {
-				if e, ok := err.(net.Error); ok && e.Timeout() {
-					ws.Write([]byte("{}"))
-					continue
-				}
 
+		go func() {
+			time.Sleep(10 * time.Second)
+			ws.WriteMessage(websocket.TextMessage, []byte("{}"))
+		}()
+
+		for {
+			_, msg, err := ws.ReadMessage()
+			if err != nil {
 				log.Print(err)
 				ws.Close()
 				time.Sleep(2 * time.Second)
 				break
 			}
-			fmt.Printf("Received: %s.\n", msg[:n])
+			log.Printf("Received: %s.\n", msg)
 			var f interface{}
-			err := json.Unmarshal(msg[:n], &f)
+			err = json.Unmarshal(msg, &f)
 			if err != nil {
 				log.Print(err)
 				ws.Close()
